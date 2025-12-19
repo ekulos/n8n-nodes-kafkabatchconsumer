@@ -151,15 +151,6 @@ export class KafkaBatchConsumer implements INodeType {
         ['localhost:9092'],
     };
 
-    // Debug: log credentials to understand SSL configuration
-    console.log('🔍 Kafka Credentials Debug:', {
-      ssl: credentials.ssl,
-      hasCa: !!credentials.ca,
-      hasCert: !!credentials.cert,
-      hasKey: !!credentials.key,
-      sslType: typeof credentials.ssl,
-    });
-
     // Map N8N credential fields to KafkaJS authentication format
     // Add SASL authentication if provided
     if (credentials.authentication) {
@@ -170,11 +161,11 @@ export class KafkaBatchConsumer implements INodeType {
       };
     }
 
-    // Add SSL/TLS configuration for encrypted connections
-    // Only enable SSL if explicitly set to true or if SSL certificates are provided
-    if (credentials.ssl === true || credentials.ca || credentials.cert || credentials.key) {
+    // Add SSL/TLS configuration ONLY if explicitly enabled
+    // SSL must be explicitly set to true - presence of certificates alone is not enough
+    if (credentials.ssl === true) {
       kafkaConfig.ssl = {
-        rejectUnauthorized: credentials.ssl !== false, // Default to true if SSL is enabled
+        rejectUnauthorized: true,
       };
 
       // Add optional SSL certificates for mutual TLS authentication
