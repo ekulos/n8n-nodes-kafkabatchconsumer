@@ -180,6 +180,21 @@ export class KafkaBatchConsumer implements INodeType {
       }
     }
 
+    // DEBUG: Throw error with full config to see what's being passed to KafkaJS
+    if (kafkaConfig.ssl) {
+      throw new NodeOperationError(
+        this.getNode(),
+        `DEBUG: SSL is being configured! Config: ${JSON.stringify({
+          hasSsl: !!kafkaConfig.ssl,
+          credentialSsl: credentials.ssl,
+          credentialSslType: typeof credentials.ssl,
+          hasCa: !!credentials.ca,
+          hasCert: !!credentials.cert,
+          hasKey: !!credentials.key,
+        }, null, 2)}`
+      );
+    }
+
     /**
      * Step 3: Consumer Setup
      * Initialize Kafka client and consumer with configuration
