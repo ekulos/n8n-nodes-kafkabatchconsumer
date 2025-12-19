@@ -107,7 +107,6 @@ export class KafkaBatchConsumer implements INodeType {
    * Handles the complete workflow: credentials, connection, consumption, and error handling
    */
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-    const items = this.getInputData();
     const returnData: INodeExecutionData[] = [];
 
     // Get all node parameters from N8N configuration
