@@ -161,39 +161,9 @@ export class KafkaBatchConsumer implements INodeType {
       };
     }
 
-    // Add SSL/TLS configuration ONLY if explicitly enabled
-    // SSL must be explicitly set to true - presence of certificates alone is not enough
-    if (credentials.ssl === true) {
-      kafkaConfig.ssl = {
-        rejectUnauthorized: true,
-      };
-
-      // Add optional SSL certificates for mutual TLS authentication
-      if (credentials.ca) {
-        kafkaConfig.ssl.ca = credentials.ca; // Certificate Authority
-      }
-      if (credentials.cert) {
-        kafkaConfig.ssl.cert = credentials.cert; // Client certificate
-      }
-      if (credentials.key) {
-        kafkaConfig.ssl.key = credentials.key; // Client private key
-      }
-    }
-
-    // DEBUG: Throw error with full config to see what's being passed to KafkaJS
-    if (kafkaConfig.ssl) {
-      throw new NodeOperationError(
-        this.getNode(),
-        `DEBUG: SSL is being configured! Config: ${JSON.stringify({
-          hasSsl: !!kafkaConfig.ssl,
-          credentialSsl: credentials.ssl,
-          credentialSslType: typeof credentials.ssl,
-          hasCa: !!credentials.ca,
-          hasCert: !!credentials.cert,
-          hasKey: !!credentials.key,
-        }, null, 2)}`
-      );
-    }
+    // SSL/TLS DISABLED: Force plaintext connection
+    // SSL is explicitly set to false to prevent any TLS negotiation
+    kafkaConfig.ssl = false;
 
     /**
      * Step 3: Consumer Setup
