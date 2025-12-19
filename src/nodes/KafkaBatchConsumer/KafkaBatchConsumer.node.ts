@@ -161,9 +161,23 @@ export class KafkaBatchConsumer implements INodeType {
       };
     }
 
-    // SSL/TLS DISABLED: Force plaintext connection
-    // SSL is explicitly set to false to prevent any TLS negotiation
-    kafkaConfig.ssl = false;
+    // Add SSL/TLS configuration if enabled
+    if (credentials.ssl === true) {
+      kafkaConfig.ssl = {
+        rejectUnauthorized: true,
+      };
+
+      // Add optional SSL certificates for mutual TLS authentication
+      if (credentials.ca) {
+        kafkaConfig.ssl.ca = credentials.ca; // Certificate Authority
+      }
+      if (credentials.cert) {
+        kafkaConfig.ssl.cert = credentials.cert; // Client certificate
+      }
+      if (credentials.key) {
+        kafkaConfig.ssl.key = credentials.key; // Client private key
+      }
+    }
 
     /**
      * Step 3: Consumer Setup
