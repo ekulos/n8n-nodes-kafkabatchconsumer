@@ -24,8 +24,16 @@
       "dist/nodes/KafkaBatchConsumer/KafkaBatchConsumer.node.js"
     ]
   },
-  "author": "",
+  "author": "Luca Pisani",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ekulos/n8n-nodes-kafkabatchconsumer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ekulos/n8n-nodes-kafkabatchconsumer/issues"
+  },
+  "homepage": "https://github.com/ekulos/n8n-nodes-kafkabatchconsumer#readme",
   "dependencies": {
     "kafkajs": "^2.2.4",
     "n8n-workflow": "^1.0.0"
