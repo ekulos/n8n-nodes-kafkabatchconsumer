@@ -151,6 +151,15 @@ export class KafkaBatchConsumer implements INodeType {
         ['localhost:9092'],
     };
 
+    // Debug: log credentials to understand SSL configuration
+    console.log('🔍 Kafka Credentials Debug:', {
+      ssl: credentials.ssl,
+      hasCa: !!credentials.ca,
+      hasCert: !!credentials.cert,
+      hasKey: !!credentials.key,
+      sslType: typeof credentials.ssl,
+    });
+
     // Map N8N credential fields to KafkaJS authentication format
     // Add SASL authentication if provided
     if (credentials.authentication) {
