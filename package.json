@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc && npm run copy:icons",
     "copy:icons": "cp -r src/nodes/KafkaBatchConsumer/*.svg dist/nodes/KafkaBatchConsumer/",
+    "prepublishOnly": "npm run build",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint . --ext .ts"
