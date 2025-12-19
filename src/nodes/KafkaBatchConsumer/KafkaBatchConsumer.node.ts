@@ -295,20 +295,20 @@ export class KafkaBatchConsumer implements INodeType {
        */
       await collectionPromise;
 
-      // Gracefully disconnect consumer and cleanup resources
-      await consumer.disconnect();
-      consumerConnected = false;
-
-      // Add collected messages to return data
-      returnData.push(...messages);
-    } catStop consumer processing before disconnecting
+      // Stop consumer processing before disconnecting
       try {
         await consumer.stop();
       } catch (error) {
         // Ignore stop errors
       }
 
-      // ch (error) {
+      // Gracefully disconnect consumer and cleanup resources
+      await consumer.disconnect();
+      consumerConnected = false;
+
+      // Add collected messages to return data
+      returnData.push(...messages);
+    } catch (error) {
       // Ensure consumer is disconnected
       if (consumerConnected) {
         try {
