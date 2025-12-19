@@ -29,32 +29,15 @@ export class KafkaBatchConsumer implements INodeType {
     },
     inputs: ['main'],
     outputs: ['main'],
-    // Credentials reference - same as Kafka Trigger and Producer nodes
-    // Optional: allows unauthenticated connections
+    // Credentials reference - required for brokers and clientId configuration
     credentials: [
       {
         name: 'kafka',
-        required: false,
+        required: true,
       },
     ],
     // Define all Kafka configuration properties
     properties: [
-      {
-        displayName: 'Brokers',
-        name: 'brokers',
-        type: 'string',
-        default: 'localhost:9092',
-        required: true,
-        description: 'Comma-separated list of Kafka broker addresses',
-      },
-      {
-        displayName: 'Client ID',
-        name: 'clientId',
-        type: 'string',
-        default: 'n8n-kafka-batch-consumer',
-        required: true,
-        description: 'Unique identifier for this Kafka client',
-      },
       {
         displayName: 'Group ID',
         name: 'groupId',
@@ -128,8 +111,6 @@ export class KafkaBatchConsumer implements INodeType {
     const returnData: INodeExecutionData[] = [];
 
     // Get all node parameters from N8N configuration
-    const brokers = this.getNodeParameter('brokers', 0) as string;
-    const clientId = this.getNodeParameter('clientId', 0) as string;
     const groupId = this.getNodeParameter('groupId', 0) as string;
     const topic = this.getNodeParameter('topic', 0) as string;
     const batchSize = this.getNodeParameter('batchSize', 0) as number;
@@ -143,57 +124,59 @@ export class KafkaBatchConsumer implements INodeType {
     const readTimeout = options.readTimeout || 60000;
     const parseJson = options.parseJson !== undefined ? options.parseJson : true;
 
-    // Parse comma-separated brokers string to array
-    const brokerList = brokers.split(',').map((b) => b.trim());
-
     /**
      * Step 2: Credentials Retrieval and Kafka Configuration
      * Build KafkaJS configuration with optional authentication
      * Supports SASL (PLAIN, SCRAM-SHA-256, SCRAM-SHA-512) and SSL/TLS
+     * Brokers and clientId are now taken from credentials
      */
-    // Build base Kafka configuration
-    const kafkaConfig: any = {
-      clientId,
-      brokers: brokerList,
-    };
-
-    // Attempt to retrieve optional Kafka credentials
+    
+    // Attempt to retrieve Kafka credentials (required for brokers and clientId)
     let credentials: any = null;
     try {
       credentials = await this.getCredentials('kafka');
     } catch (error) {
-      // Credentials are optional, continue without them for unauthenticated connections
+      throw new NodeOperationError(
+        this.getNode(),
+        'Kafka credentials are required to get brokers and clientId configuration'
+      );
     }
 
+    // Build base Kafka configuration from credentials
+    const kafkaConfig: any = {
+      clientId: credentials.clientId || 'n8n-kafka-batch-consumer',
+      brokers: credentials.brokers ? 
+        (typeof credentials.brokers === 'string' ? 
+          credentials.brokers.split(',').map((b: string) => b.trim()) : 
+          credentials.brokers) : 
+        ['localhost:9092'],
+    };
+
     // Map N8N credential fields to KafkaJS authentication format
-    // Add authentication if credentials are provided
-    if (credentials) {
-      // Add SASL authentication for secure connections
-      // Supports mechanisms: plain, scram-sha-256, scram-sha-512
-      if (credentials.authentication) {
-        kafkaConfig.sasl = {
-          mechanism: credentials.authentication, // PLAIN, SCRAM-SHA-256, or SCRAM-SHA-512
-          username: credentials.username,
-          password: credentials.password,
-        };
+    // Add SASL authentication if provided
+    if (credentials.authentication) {
+      kafkaConfig.sasl = {
+        mechanism: credentials.authentication, // PLAIN, SCRAM-SHA-256, or SCRAM-SHA-512
+        username: credentials.username,
+        password: credentials.password,
+      };
+    }
+
+    // Add SSL/TLS configuration for encrypted connections
+    if (credentials.ssl !== undefined) {
+      kafkaConfig.ssl = {
+        rejectUnauthorized: credentials.ssl, // Validate server certificates
+      };
+
+      // Add optional SSL certificates for mutual TLS authentication
+      if (credentials.ca) {
+        kafkaConfig.ssl.ca = credentials.ca; // Certificate Authority
       }
-
-      // Add SSL/TLS configuration for encrypted connections
-      if (credentials.ssl !== undefined) {
-        kafkaConfig.ssl = {
-          rejectUnauthorized: credentials.ssl, // Validate server certificates
-        };
-
-        // Add optional SSL certificates for mutual TLS authentication
-        if (credentials.ca) {
-          kafkaConfig.ssl.ca = credentials.ca; // Certificate Authority
-        }
-        if (credentials.cert) {
-          kafkaConfig.ssl.cert = credentials.cert; // Client certificate
-        }
-        if (credentials.key) {
-          kafkaConfig.ssl.key = credentials.key; // Client private key
-        }
+      if (credentials.cert) {
+        kafkaConfig.ssl.cert = credentials.cert; // Client certificate
+      }
+      if (credentials.key) {
+        kafkaConfig.ssl.key = credentials.key; // Client private key
       }
     }
 

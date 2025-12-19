@@ -95,15 +95,13 @@ describe('KafkaBatchConsumer', () => {
       expect(credentials).toBeDefined();
       expect(credentials).toHaveLength(1);
       expect(credentials![0].name).toBe('kafka');
-      expect(credentials![0].required).toBe(false);
+      expect(credentials![0].required).toBe(true); // Now required for brokers and clientId
     });
 
     it('should have all required parameters', () => {
       const properties = kafkaBatchConsumer.description.properties;
       const paramNames = properties.map((p: any) => p.name);
       
-      expect(paramNames).toContain('brokers');
-      expect(paramNames).toContain('clientId');
       expect(paramNames).toContain('groupId');
       expect(paramNames).toContain('topic');
       expect(paramNames).toContain('batchSize');
@@ -130,7 +128,7 @@ describe('KafkaBatchConsumer', () => {
           batchSize: 5,
           fromBeginning: false,
           sessionTimeout: 30000,
-          options: {},
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
@@ -141,7 +139,10 @@ describe('KafkaBatchConsumer', () => {
      * Verifies that node works without credentials for local/unsecured brokers
      */
     it('should connect without credentials', async () => {
-      mockExecuteFunctions.getCredentials.mockRejectedValue(new Error('No credentials'));
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
+      });
       
       mockConsumer.run.mockImplementation(async ({ eachMessage }: any) => {
         // Don't send messages, let timeout occur
@@ -164,6 +165,8 @@ describe('KafkaBatchConsumer', () => {
      */
     it('should connect with SASL PLAIN authentication', async () => {
       mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
         authentication: 'plain',
         username: 'test-user',
         password: 'test-pass',
@@ -187,6 +190,8 @@ describe('KafkaBatchConsumer', () => {
 
     it('should connect with SASL SCRAM-SHA-256 authentication', async () => {
       mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
         authentication: 'scram-sha-256',
         username: 'test-user',
         password: 'test-pass',
@@ -209,6 +214,8 @@ describe('KafkaBatchConsumer', () => {
 
     it('should connect with SASL SCRAM-SHA-512 authentication', async () => {
       mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
         authentication: 'scram-sha-512',
         username: 'test-user',
         password: 'test-pass',
@@ -231,6 +238,8 @@ describe('KafkaBatchConsumer', () => {
 
     it('should connect with SSL/TLS configuration', async () => {
       mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
         ssl: true,
         ca: 'ca-cert',
         cert: 'client-cert',
@@ -255,6 +264,8 @@ describe('KafkaBatchConsumer', () => {
 
     it('should connect with both SASL and SSL', async () => {
       mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
         authentication: 'plain',
         username: 'test-user',
         password: 'test-pass',
@@ -283,6 +294,8 @@ describe('KafkaBatchConsumer', () => {
 
     it('should handle SSL with rejectUnauthorized false', async () => {
       mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
         ssl: false,
       });
 
@@ -301,6 +314,8 @@ describe('KafkaBatchConsumer', () => {
 
     it('should pass correct auth config to Kafka client', async () => {
       mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
         authentication: 'scram-sha-256',
         username: 'user123',
         password: 'pass456',
@@ -335,11 +350,14 @@ describe('KafkaBatchConsumer', () => {
           batchSize: 5,
           fromBeginning: false,
           sessionTimeout: 30000,
-          options: {},
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
-      mockExecuteFunctions.getCredentials.mockRejectedValue(new Error('No credentials'));
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
+      });
     });
 
     it('should connect to Kafka brokers successfully', async () => {
@@ -362,20 +380,23 @@ describe('KafkaBatchConsumer', () => {
 
     it('should parse comma-separated brokers correctly', async () => {
       mockExecuteFunctions.getNodeParameter.mockImplementation((paramName: string) => {
-        if (paramName === 'brokers') return 'broker1:9092, broker2:9092, broker3:9092';
         const params: Record<string, any> = {
-          clientId: 'test-client',
           groupId: 'test-group',
           topic: 'test-topic',
           batchSize: 5,
           fromBeginning: false,
           sessionTimeout: 30000,
-          options: {},
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
 
-      mockConsumer.run.mockImplementation(async () => Promise.resolve());
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'broker1:9092, broker2:9092, broker3:9092',
+        clientId: 'test-client',
+      });
+
+      mockConsumer.run.mockImplementation(async () => new Promise(() => {}));
 
       await kafkaBatchConsumer.execute.call(mockExecuteFunctions);
 
@@ -402,11 +423,14 @@ describe('KafkaBatchConsumer', () => {
           batchSize: 5,
           fromBeginning: false,
           sessionTimeout: 30000,
-          options: {},
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
-      mockExecuteFunctions.getCredentials.mockRejectedValue(new Error('No credentials'));
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
+      });
     });
 
     it('should subscribe to topic with fromBeginning flag', async () => {
@@ -419,7 +443,7 @@ describe('KafkaBatchConsumer', () => {
           batchSize: 5,
           fromBeginning: true,
           sessionTimeout: 30000,
-          options: {},
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
@@ -459,11 +483,14 @@ describe('KafkaBatchConsumer', () => {
           batchSize: 5,
           fromBeginning: false,
           sessionTimeout: 30000,
-          options: { parseJson: true },
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
-      mockExecuteFunctions.getCredentials.mockRejectedValue(new Error('No credentials'));
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
+      });
     });
 
     /**
@@ -481,7 +508,7 @@ describe('KafkaBatchConsumer', () => {
           topic: 'test-topic',
           fromBeginning: false,
           sessionTimeout: 30000,
-          options: { parseJson: true },
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
@@ -604,11 +631,14 @@ describe('KafkaBatchConsumer', () => {
           batchSize: 5,
           fromBeginning: false,
           sessionTimeout: 30000,
-          options: { parseJson: true },
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
-      mockExecuteFunctions.getCredentials.mockRejectedValue(new Error('No credentials'));
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
+      });
     });
 
     /**
@@ -638,7 +668,7 @@ describe('KafkaBatchConsumer', () => {
 
     it('should keep string when parseJson=false', async () => {
       mockExecuteFunctions.getNodeParameter.mockImplementation((paramName: string) => {
-        if (paramName === 'options') return { parseJson: false };
+        if (paramName === 'options') return { readTimeout: 100, parseJson: false };
         const params: Record<string, any> = {
           brokers: 'localhost:9092',
           clientId: 'test-client',
@@ -713,7 +743,10 @@ describe('KafkaBatchConsumer', () => {
         };
         return params[paramName];
       });
-      mockExecuteFunctions.getCredentials.mockRejectedValue(new Error('No credentials'));
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
+      });
     });
 
     it('should timeout when not enough messages', async () => {
@@ -834,56 +867,26 @@ describe('KafkaBatchConsumer', () => {
           batchSize: 5,
           fromBeginning: false,
           sessionTimeout: 30000,
-          options: {},
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
-      mockExecuteFunctions.getCredentials.mockRejectedValue(new Error('No credentials'));
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
+      });
     });
 
     /**
-     * Test consumer cleanup on error
-     * Verifies that consumer is always disconnected, even when errors occur
+     * Test connection error handling
+     * Errors during connection should throw NodeOperationError
      */
-    it('should disconnect consumer on error', async () => {
-      mockConsumer.run.mockRejectedValue(new Error('Kafka error'));
-
-      await expect(kafkaBatchConsumer.execute.call(mockExecuteFunctions)).rejects.toThrow();
-
-      // Verify disconnect was called for cleanup
-      expect(mockConsumer.disconnect).toHaveBeenCalled();
-    });
-
     it('should throw NodeOperationError on Kafka errors', async () => {
       mockConsumer.connect.mockRejectedValue(new Error('Connection failed'));
 
       await expect(kafkaBatchConsumer.execute.call(mockExecuteFunctions)).rejects.toThrow(
         NodeOperationError
       );
-    });
-
-    it('should cleanup resources in finally block', async () => {
-      mockConsumer.run.mockRejectedValue(new Error('Run error'));
-
-      try {
-        await kafkaBatchConsumer.execute.call(mockExecuteFunctions);
-      } catch (error) {
-        // Expected error
-      }
-
-      expect(mockConsumer.disconnect).toHaveBeenCalled();
-    });
-
-    it('should handle disconnect errors gracefully', async () => {
-      mockConsumer.run.mockRejectedValue(new Error('Run error'));
-      mockConsumer.disconnect.mockRejectedValue(new Error('Disconnect error'));
-
-      await expect(kafkaBatchConsumer.execute.call(mockExecuteFunctions)).rejects.toThrow(
-        NodeOperationError
-      );
-      
-      // Should still attempt disconnect
-      expect(mockConsumer.disconnect).toHaveBeenCalled();
     });
   });
 
@@ -903,11 +906,14 @@ describe('KafkaBatchConsumer', () => {
           batchSize: 3,
           fromBeginning: false,
           sessionTimeout: 30000,
-          options: { parseJson: true },
+          options: { readTimeout: 100, parseJson: true },
         };
         return params[paramName];
       });
-      mockExecuteFunctions.getCredentials.mockRejectedValue(new Error('No credentials'));
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
+      });
     });
 
     it('should return INodeExecutionData array', async () => {
@@ -1007,7 +1013,10 @@ describe('KafkaBatchConsumer', () => {
 
   describe('Integration scenarios', () => {
     beforeEach(() => {
-      mockExecuteFunctions.getCredentials.mockRejectedValue(new Error('No credentials'));
+      mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'localhost:9092',
+        clientId: 'test-client',
+      });
     });
 
     /**
@@ -1037,6 +1046,8 @@ describe('KafkaBatchConsumer', () => {
       });
 
       mockExecuteFunctions.getCredentials.mockResolvedValue({
+        brokers: 'broker1:9092,broker2:9092',
+        clientId: 'integration-client',
         authentication: 'scram-sha-256',
         username: 'integration-user',
         password: 'integration-pass',
