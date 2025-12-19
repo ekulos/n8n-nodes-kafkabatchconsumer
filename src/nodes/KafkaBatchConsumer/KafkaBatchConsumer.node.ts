@@ -74,7 +74,7 @@ export class KafkaBatchConsumer implements INodeType {
         name: 'sessionTimeout',
         type: 'number',
         default: 30000,
-        description: 'Session timeout in milliseconds',
+        description: 'Session timeout in milliseconds (minimum 6000, typically between 6000-300000)',
       },
       {
         displayName: 'Options',
@@ -114,7 +114,16 @@ export class KafkaBatchConsumer implements INodeType {
     const topic = this.getNodeParameter('topic', 0) as string;
     const batchSize = this.getNodeParameter('batchSize', 0) as number;
     const fromBeginning = this.getNodeParameter('fromBeginning', 0) as boolean;
-    const sessionTimeout = this.getNodeParameter('sessionTimeout', 0) as number;
+    let sessionTimeout = this.getNodeParameter('sessionTimeout', 0) as number;
+    
+    // Validate session timeout (Kafka brokers typically require min 6000ms)
+    if (sessionTimeout < 6000) {
+      throw new NodeOperationError(
+        this.getNode(),
+        `Session timeout must be at least 6000ms (6 seconds). Current value: ${sessionTimeout}ms. Kafka brokers require a minimum as configured by group.min.session.timeout.ms.`
+      );
+    }
+    
     const options = this.getNodeParameter('options', 0) as {
       readTimeout?: number;
       parseJson?: boolean;
