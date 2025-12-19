@@ -292,23 +292,25 @@ describe('KafkaBatchConsumer', () => {
       });
     });
 
-    it('should handle SSL with rejectUnauthorized false', async () => {
+    /**
+     * Test plaintext connection (no SSL)
+     * When ssl is false or undefined, no SSL configuration should be added
+     */
+    it('should handle plaintext connection without SSL', async () => {
       mockExecuteFunctions.getCredentials.mockResolvedValue({
         brokers: 'localhost:9092',
         clientId: 'test-client',
-        ssl: false,
+        ssl: false, // Explicitly disable SSL
       });
 
-      mockConsumer.run.mockImplementation(async () => Promise.resolve());
+      mockConsumer.run.mockImplementation(async () => new Promise(() => {}));
 
       await kafkaBatchConsumer.execute.call(mockExecuteFunctions);
 
+      // Should NOT include ssl config when ssl: false
       expect(Kafka).toHaveBeenCalledWith({
         clientId: 'test-client',
         brokers: ['localhost:9092'],
-        ssl: {
-          rejectUnauthorized: false,
-        },
       });
     });
 

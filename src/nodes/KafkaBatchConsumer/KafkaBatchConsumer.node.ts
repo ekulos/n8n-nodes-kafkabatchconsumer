@@ -162,9 +162,10 @@ export class KafkaBatchConsumer implements INodeType {
     }
 
     // Add SSL/TLS configuration for encrypted connections
-    if (credentials.ssl !== undefined) {
+    // Only enable SSL if explicitly set to true or if SSL certificates are provided
+    if (credentials.ssl === true || credentials.ca || credentials.cert || credentials.key) {
       kafkaConfig.ssl = {
-        rejectUnauthorized: credentials.ssl, // Validate server certificates
+        rejectUnauthorized: credentials.ssl !== false, // Default to true if SSL is enabled
       };
 
       // Add optional SSL certificates for mutual TLS authentication
