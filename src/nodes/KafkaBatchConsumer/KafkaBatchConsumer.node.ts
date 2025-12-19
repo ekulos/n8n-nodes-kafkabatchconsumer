@@ -228,7 +228,13 @@ export class KafkaBatchConsumer implements INodeType {
       });
 
       // Set maximum wait time for message collection
-      timeoutHandle = setTimeout(() => {
+      // When timeout is reached, stop the consumer and resolve with partial batch
+      timeoutHandle = setTimeout(async () => {
+        try {
+          await consumer.stop(); // Stop consumer processing
+        } catch (error) {
+          // Ignore stop errors
+        }
         if (resolvePromise) {
           resolvePromise(); // Resolve with partial batch on timeout
         }
@@ -278,6 +284,12 @@ export class KafkaBatchConsumer implements INodeType {
           if (messages.length >= batchSize) {
             if (timeoutHandle) {
               clearTimeout(timeoutHandle); // Cancel timeout
+            }
+            // Stop consumer and complete batch collection
+            try {
+              await consumer.stop();
+            } catch (error) {
+              // Ignore stop errors
             }
             if (resolvePromise) {
               resolvePromise(); // Complete batch collection
