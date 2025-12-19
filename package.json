@@ -4,7 +4,8 @@
   "description": "N8N node for consuming Kafka messages in batches",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy:icons",
+    "copy:icons": "cp -r src/nodes/KafkaBatchConsumer/*.svg dist/nodes/KafkaBatchConsumer/",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint . --ext .ts"
