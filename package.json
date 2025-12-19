@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-kafka-batch-consumer",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "N8N node for consuming Kafka messages in batches",
   "main": "dist/index.js",
   "scripts": {
