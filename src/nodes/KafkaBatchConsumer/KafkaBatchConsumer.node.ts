@@ -227,15 +227,6 @@ export class KafkaBatchConsumer implements INodeType {
         resolvePromise = resolve;
       });
 
-      // Set maximum wait time for message collection
-      // When timeout is reached, stop the consumer and resolve with partial batch
-      timeoutHandle = setTimeout(() => {
-        // Don't wait for consumer.stop() - just resolve immediately
-        if (resolvePromise) {
-          resolvePromise(); // Resolve with partial batch on timeout
-        }
-      }, readTimeout);
-
       /**
        * Start message consumption
        * eachMessage callback processes messages one by one
@@ -244,6 +235,7 @@ export class KafkaBatchConsumer implements INodeType {
        */
       consumer.run({
         eachMessage: async ({ topic, partition, message }: EachMessagePayload) => {
+          console.log(`[eachMessage] Ricevuto messaggio: topic=${topic}, partition=${partition}, offset=${message.offset}`);
           /**
            * Step 6: Output Format
            * Process each message and format for N8N output
@@ -275,9 +267,11 @@ export class KafkaBatchConsumer implements INodeType {
           };
 
           messages.push(messageData);
+          console.log(`[eachMessage] Messaggi raccolti finora: ${messages.length}/${batchSize}`);
 
           // Check if batch size reached
           if (messages.length >= batchSize) {
+            console.log(`[eachMessage] Batch size raggiunto, risolvo Promise`);
             if (timeoutHandle) {
               clearTimeout(timeoutHandle); // Cancel timeout
             }
@@ -287,6 +281,36 @@ export class KafkaBatchConsumer implements INodeType {
           }
         },
       });
+
+      // Wait a moment for consumer to start fetching, then set timeout
+      // This prevents timeout from firing before messages are fetched
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`Avvio timeout di ${readTimeout}ms per raccolta messaggi`);
+      
+      // Set maximum wait time for message collection
+      // When timeout is reached, stop the consumer and resolve with partial batch
+      timeoutHandle = setTimeout(() => {
+        console.log(`[Timeout] Scaduto dopo ${readTimeout}ms, messaggi raccolti: ${messages.length}`);
+        // Don't wait for consumer.stop() - just resolve immediately
+        if (resolvePromise) {
+          resolvePromise(); // Resolve with partial batch on timeout
+        }
+      }, readTimeout);
+
+      // Wait a moment for consumer to start fetching, then set timeout
+      // This prevents timeout from firing before messages are fetched
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`Avvio timeout di ${readTimeout}ms per raccolta messaggi`);
+      
+      // Set maximum wait time for message collection
+      // When timeout is reached, stop the consumer and resolve with partial batch
+      timeoutHandle = setTimeout(() => {
+        console.log(`[Timeout] Scaduto dopo ${readTimeout}ms, messaggi raccolti: ${messages.length}`);
+        // Don't wait for consumer.stop() - just resolve immediately
+        if (resolvePromise) {
+          resolvePromise(); // Resolve with partial batch on timeout
+        }
+      }, readTimeout);
 
       /**
        * Wait for collection to complete
