@@ -22,8 +22,8 @@ echo "✅ Dependencies installed successfully"
 echo ""
 
 # Run tests with coverage
-echo "Running tests with coverage..."
-npm run test:coverage
+echo "Running tests..."
+npx jest
 
 if [ $? -ne 0 ]; then
     echo ""
