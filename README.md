@@ -38,6 +38,37 @@ npm run build
 - **Read Timeout**: Maximum time to wait for messages in milliseconds (default: `60000`)
 - **Parse JSON**: Whether to parse message values as JSON (default: `true`)
 
+## Understanding Timeouts
+
+The node uses two different timeout configurations that serve distinct purposes:
+
+### Session Timeout (Kafka/Broker-side)
+
+- **Purpose**: Manages the connection between the consumer and the Kafka broker
+- **Function**: The broker uses this to determine if the consumer is still "alive" and part of the consumer group
+- **Behavior**: 
+  - The consumer must send heartbeats to the broker within this time
+  - If the broker doesn't receive heartbeats for `sessionTimeout` milliseconds, it considers the consumer "dead" and triggers a rebalancing (reassigning partitions to other consumers in the group)
+- **Typical values**: 6000-300000 ms (6-300 seconds). Minimum 6000ms enforced by the broker
+- **Managed by**: Kafka broker and KafkaJS consumer (automatic background heartbeats)
+
+### Read Timeout (Application-side)
+
+- **Purpose**: Controls how long the n8n node waits to collect batch messages
+- **Function**: Prevents the workflow from blocking indefinitely if insufficient messages arrive to complete the batch
+- **Behavior**:
+  - If `batchSize` messages arrive before the timeout → returns immediately
+  - If the timeout expires first → returns collected messages (partial batch)
+- **Typical values**: 60000 ms (60 seconds) by default, user-configurable
+- **Managed by**: Application code (setTimeout in the execute method)
+
+### Why Both Are Needed
+
+- **Session Timeout alone**: The consumer would stay connected to the broker, but the n8n workflow would block forever if messages don't arrive
+- **Read Timeout alone**: The workflow would complete correctly, but the broker might disconnect the consumer during long waits if heartbeats aren't maintained
+
+**Best Practice**: Keep Session Timeout ≥ Read Timeout to avoid broker disconnections while waiting for messages. However, KafkaJS sends heartbeats automatically in the background, so the consumer stays alive even during longer Read Timeouts.
+
 ## Credentials
 
 The node supports optional Kafka credentials with the following features:

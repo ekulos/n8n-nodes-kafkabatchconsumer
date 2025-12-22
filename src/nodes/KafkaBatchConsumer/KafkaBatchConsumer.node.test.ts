@@ -13,9 +13,9 @@
  * - Integration scenarios
  */
 
-import { IExecuteFunctions, INodeExecutionData, NodeOperationError } from 'n8n-workflow';
+import { IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import { KafkaBatchConsumer } from './KafkaBatchConsumer.node';
-import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
+import { Kafka, Consumer } from 'kafkajs';
 
 // Mock KafkaJS library for testing
 jest.mock('kafkajs');
@@ -144,7 +144,7 @@ describe('KafkaBatchConsumer', () => {
         clientId: 'test-client',
       });
       
-      mockConsumer.run.mockImplementation(async ({ eachMessage }: any) => {
+      mockConsumer.run.mockImplementation(async () => {
         // Don't send messages, let timeout occur
         // consumer.run never resolves - it runs forever
         return new Promise(() => {});
@@ -792,7 +792,6 @@ describe('KafkaBatchConsumer', () => {
         return params[paramName];
       });
 
-      let messagesSent = 0;
       mockConsumer.run.mockImplementation(async ({ eachMessage }: any) => {
         // Send 5 messages
         for (let i = 0; i < 5; i++) {
@@ -807,7 +806,6 @@ describe('KafkaBatchConsumer', () => {
               headers: {},
             },
           });
-          messagesSent++;
         }
         
         // Wait for timeout

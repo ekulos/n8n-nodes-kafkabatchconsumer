@@ -114,7 +114,7 @@ export class KafkaBatchConsumer implements INodeType {
     const topic = this.getNodeParameter('topic', 0) as string;
     const batchSize = this.getNodeParameter('batchSize', 0) as number;
     const fromBeginning = this.getNodeParameter('fromBeginning', 0) as boolean;
-    let sessionTimeout = this.getNodeParameter('sessionTimeout', 0) as number;
+    const sessionTimeout = this.getNodeParameter('sessionTimeout', 0) as number;
     
     // Validate session timeout (Kafka brokers typically require min 6000ms)
     if (sessionTimeout < 6000) {
